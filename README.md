@@ -39,7 +39,7 @@ O Vite local e o GitHub Pages usam a API pública configurada em cloud-config.js
 
 build:cloud compila o frontend para o Worker, incorpora seus arquivos estáticos e gera dist/server/index.js e dist/.openai/hosting.json. Depois gera o frontend do GitHub Pages em docs/, apontando para a API pública.
 
-Publique o commit exato na fonte Git do Sites, empacote o conteúdo de dist/ em tar, salve uma versão e publique-a. Depois envie main ao GitHub: o Pages usa /docs. Tokens de publicação não pertencem ao repositório.
+Publique o commit exato na fonte Git do Sites, empacote os diretórios .openai e dist preservando seus caminhos em tar (tar -cf cloud-build.tar .openai dist), salve uma versão e publique-a. Depois envie main ao GitHub: o Pages usa /docs. Tokens de publicação não pertencem ao repositório.
 
 ## Estudo do acervo
 
@@ -62,4 +62,5 @@ scripts/study-corpus.js reproduz o inventário, hashes, formatos, cabeçalhos e 
 - [OpenAI Sites](https://github.com/openai/sites)
 
 Ferramenta independente, sem vínculo com Avid. Não modifica licença, ativação ou instalação do Sibelius.
+
 

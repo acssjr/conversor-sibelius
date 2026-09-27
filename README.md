@@ -2,6 +2,10 @@
 
 Aplicação React + Vite para reconhecer famílias do formato `.sib` e gerar uma cópia experimental com identificação compatível com Sibelius 2024. Todo o processamento ocorre no navegador, em um Web Worker. Nenhuma partitura é enviada a um servidor.
 
+## Usar no navegador
+
+[Abra o conversor](https://acssjr.github.io/conversor-sibelius/). O site usa o GitHub Pages; as partituras permanecem no seu navegador.
+
 ## Executar localmente
 
 Requer Node.js 22.12 ou superior.

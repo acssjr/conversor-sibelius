@@ -35,7 +35,7 @@ npm test
 npm run build:cloud
 ~~~
 
-O Vite local e o GitHub Pages usam a API pública configurada em .openai/hosting.json, no campo cloud_origin. Para desenvolver a API, invoque api(Request) em Node ou execute o Worker compilado num runtime compatível com Fetch.
+O Vite local e o GitHub Pages usam a API pública configurada em cloud-config.json, no campo cloud_origin. Para desenvolver a API, invoque api(Request) em Node ou execute o Worker compilado num runtime compatível com Fetch.
 
 build:cloud compila o frontend para o Worker, incorpora seus arquivos estáticos e gera dist/server/index.js e dist/.openai/hosting.json. Depois gera o frontend do GitHub Pages em docs/, apontando para a API pública.
 
@@ -62,3 +62,4 @@ scripts/study-corpus.js reproduz o inventário, hashes, formatos, cabeçalhos e 
 - [OpenAI Sites](https://github.com/openai/sites)
 
 Ferramenta independente, sem vínculo com Avid. Não modifica licença, ativação ou instalação do Sibelius.
+

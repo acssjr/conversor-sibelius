@@ -1,6 +1,6 @@
 # Conversor Sibelius
 
-React + Vite com processamento em nuvem em um Worker HTTP. O navegador envia o arquivo por HTTPS, recebe a análise e pode pedir uma cópia experimental para Sibelius 2024. O aplicativo não grava partituras em banco de dados, disco ou armazenamento de objetos.
+React + Vite com processamento em nuvem em um Worker HTTP. O navegador envia o arquivo por HTTPS, recebe a análise e pode pedir uma cópia para Sibelius 2024. O aplicativo não grava partituras em banco de dados, disco ou armazenamento de objetos.
 
 [Usar o conversor](https://acssjr.github.io/conversor-sibelius/)
 
@@ -19,8 +19,8 @@ O serviço valida o limite durante a leitura, assinatura, cabeçalhos, índices,
 | Origem observada | Destino padrão | Alternativo | Evidência |
 |---|---|---|---|
 | 0045/0003 | 0044/0003 | 0044/0002 | Abertura confirmada em duas partituras no Sibelius 2024.6.1 |
-| 0045/0009 | 0044/0003 | 0044/0002 | Seis partituras com estrutura e alterações binárias verificadas; abertura pendente |
-| 0045/000E | 0044/0003 | 0044/0002 | Quatro partituras com estrutura e alterações binárias verificadas; abertura pendente |
+| 0045/0009 | 0044/0003 | 0044/0002 | Seis partituras verificadas binariamente; abertura confirmada pelo usuário nos exemplos testados |
+| 0045/000E | 0044/0003 | 0044/0002 | Quatro partituras verificadas binariamente; abertura confirmada pelo usuário nos exemplos testados |
 
 O ano comercial exato das revisões recentes não é inferido. Famílias antigas do catálogo PRONOM são reconhecidas; destinos anteriores a 2024 não são oferecidos sem validação. Este ajuste de identificação não traduz todos os recursos novos. Confira abertura, conteúdo, salvamento e reabertura no Sibelius. O original permanece intacto.
 
@@ -62,5 +62,6 @@ scripts/study-corpus.js reproduz o inventário, hashes, formatos, cabeçalhos e 
 - [OpenAI Sites](https://github.com/openai/sites)
 
 Ferramenta independente, sem vínculo com Avid. Não modifica licença, ativação ou instalação do Sibelius.
+
 
 

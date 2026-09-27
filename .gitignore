@@ -1,0 +1,8 @@
+node_modules/
+*.sib
+*.zip
+.DS_Store
+.env
+.env.*
+*.log
+coverage/

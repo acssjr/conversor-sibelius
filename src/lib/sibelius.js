@@ -16,10 +16,10 @@
     if (major===0 && revision===14) family='1.2';
     if (major===63 && revision<=10) family='8.6–2019.12';
     if (major===63 && revision===11) family='2020.1';
-    const candidate = b[9]===0 && major===69 && revision===3;
+    const candidate = b[9]===0 && major===69 && [3,9,14].includes(revision);
     return {size:b.length,major,revision,family,label:family ? 'Sibelius '+family : candidate ? 'Formato recente — versão exata não identificada' : 'Formato Sibelius não catalogado',candidate};
   }
-  function analyzeStructure(b) {
+  function analyzeStructure(b, sourceRevision) {
     const v=view(b), nodes=[], edges=[], intervals=[], visited=new Set(), active=new Set();
     // Iterative DFS avoids call-stack exhaustion from malformed input.
     const pending=[{offset:0,exit:false}];
@@ -29,7 +29,7 @@
       if (active.has(p)) fail('O índice interno contém um ciclo.');
       if (visited.has(p)) continue;
       if (!Number.isInteger(p) || p<0 || p+26>b.length || !magicAt(b,p)) fail('O índice aponta para um cabeçalho ausente ou incompleto.');
-      if (b[p+9]!==0 || v.getUint16(p+10,false)!==69 || v.getUint16(p+12,false)!==3) fail('O arquivo contém versões internas diferentes. Este caso ainda não é suportado.');
+      if (b[p+9]!==0 || v.getUint16(p+10,false)!==69 || v.getUint16(p+12,false)!==sourceRevision) fail('O arquivo contém versões internas diferentes. Este caso ainda não é suportado.');
       const kind=v.getUint32(p+18,false), count=v.getUint32(p+22,false);
       if (kind!==48 && kind!==58) fail('A estrutura deste arquivo ainda não é suportada.');
       let end=p+26;
@@ -64,7 +64,7 @@
   function analyze(b) {
     const info=inspect(b);
     if (!info.candidate) return {...info,convertible:false,reason:info.family ? 'Este arquivo já declara um formato de 2024 ou anterior. Não é necessário aplicar o ajuste para 2024.' : 'Não há um perfil de conversão testado para este formato.'};
-    try { return {...info,convertible:true,structure:analyzeStructure(b)}; }
+    try { return {...info,convertible:true,structure:analyzeStructure(b,info.revision)}; }
     catch (e) { if (!(e instanceof FormatError)) throw e; return {...info,convertible:false,reason:e.message}; }
   }
   function convert(b,profile='minimal') {
@@ -74,7 +74,8 @@
     const changes=[];
     for (const node of info.structure.nodes) {
       changes.push({offset:node.offset+11,before:69,after:68});
-      if (profile==='alternative') changes.push({offset:node.offset+13,before:3,after:2});
+      const revision = profile==='alternative' ? 2 : 3;
+      if (info.revision!==revision) changes.push({offset:node.offset+13,before:info.revision,after:revision});
     }
     const output=new Uint8Array(b), planned=new Map(changes.map(c=>[c.offset,c]));
     for (const c of changes) { if (output[c.offset]!==c.before) fail('Os bytes de origem não correspondem ao perfil.'); output[c.offset]=c.after; }
@@ -83,7 +84,8 @@
       const c=planned.get(i); if (!c || output[i]!==c.after) fail('A verificação da cópia falhou.'); actual++;
     }
     if (actual!==changes.length || output.length!==b.length) fail('A verificação da cópia falhou.');
-    return {bytes:output,report:{tool:'Sibelius conversor',toolVersion:'0.1.0',profile,source:{major:info.major,revision:info.revision},target:{major:68,revision:profile==='alternative'?2:3},size:b.length,headers:info.structure.nodes.length,changedBytes:changes.length,changes,byteVerification:true,musicalValidation:false}};
+    return {bytes:output,report:{tool:'Sibelius conversor',toolVersion:'0.3.0',profile,source:{major:info.major,revision:info.revision},target:{major:68,revision:profile==='alternative'?2:3},size:b.length,headers:info.structure.nodes.length,changedBytes:changes.length,changes,byteVerification:true,musicalValidation:false}};
   }
 
 export { inspect, analyze, convert, MAX_BYTES, FormatError };
+

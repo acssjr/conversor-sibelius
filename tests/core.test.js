@@ -15,3 +15,17 @@ test('rejects unindexed signatures',()=>{const b=sample();b.set([15,83,73,66,69,
 test('rejects unrecognized structural types and nonzero leaf count',()=>{const b=sample();new DataView(b.buffer).setUint32(60,99);assert.equal(core.analyze(b).convertible,false);header(b,42,69,3,58,1);assert.equal(core.analyze(b).convertible,false);});
 test('supports nested absolute references',()=>{const b=new Uint8Array(140);header(b,0,69,3,48,1);const v=new DataView(b.buffer);v.setUint32(26,4);v.setUint32(30,40);header(b,40,69,3,48,1);v.setUint32(66,5);v.setUint32(70,80);header(b,80);assert.equal(core.convert(b).report.headers,3);});
 test('Node Buffers are copied instead of mutated',()=>{const b=Buffer.from(sample()),original=Buffer.from(b);core.convert(b);assert.deepEqual(b,original);});
+for (const revision of [9,14]) test('observed corpus revision '+revision+' maps every header to destination revision',()=>{
+  const b=sample(); header(b,0,69,revision,48,2); header(b,42,69,revision);
+  const original=b.slice();
+  for (const profile of ['minimal','alternative']) {
+    const result=core.convert(b,profile), target=profile==='minimal'?3:2;
+    assert.equal(result.report.source.revision,revision); assert.equal(result.report.changedBytes,4);
+    for (const p of [0,42]) { assert.equal(result.bytes[p+11],68); assert.equal(result.bytes[p+13],target); }
+    assert.deepEqual(b,original);
+  }
+});
+test('unobserved recent revision remains unsupported',()=>{
+  const b=sample(); header(b,0,69,15,48,2); header(b,42,69,15);
+  assert.equal(core.analyze(b).convertible,false);
+});

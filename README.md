@@ -1,57 +1,64 @@
 # Conversor Sibelius
 
-Aplicação React + Vite para reconhecer famílias do formato `.sib` e gerar uma cópia experimental com identificação compatível com Sibelius 2024. Todo o processamento ocorre no navegador, em um Web Worker. Nenhuma partitura é enviada a um servidor.
+React + Vite com processamento em nuvem em um Worker HTTP. O navegador envia o arquivo por HTTPS, recebe a análise e pode pedir uma cópia experimental para Sibelius 2024. O aplicativo não grava partituras em banco de dados, disco ou armazenamento de objetos.
 
-## Usar no navegador
+[Usar o conversor](https://acssjr.github.io/conversor-sibelius/)
 
-[Abra o conversor](https://acssjr.github.io/conversor-sibelius/). O site usa o GitHub Pages; as partituras permanecem no seu navegador.
+## Funcionamento
 
-## Executar localmente
+Um arquivo por vez, até 20 MiB. A análise e a conversão são requisições independentes: cada uma envia o original, processa em memória e devolve o resultado. Não há histórico nem URL persistente para partituras.
 
-Requer Node.js 22.12 ou superior.
+- POST /api/analyze: bytes application/octet-stream; resumo JSON.
+- POST /api/convert?profile=minimal|alternative: mesmos bytes; resposta multipart contendo arquivo e relatório técnico completo.
+- GET /api/health: estado, versão e limite de upload.
 
-```sh
+O serviço valida o limite durante a leitura, assinatura, cabeçalhos, índices, ciclos, sobreposições e consistência de versões internas. Só modifica posições previstas e compara a saída byte a byte. CORS permite o frontend do GitHub Pages e o próprio serviço. Não registra nomes ou conteúdo das partituras. A hospedagem pode manter registros operacionais de requisições.
+
+## Perfis
+
+| Origem observada | Destino padrão | Alternativo | Evidência |
+|---|---|---|---|
+| 0045/0003 | 0044/0003 | 0044/0002 | Abertura confirmada em duas partituras no Sibelius 2024.6.1 |
+| 0045/0009 | 0044/0003 | 0044/0002 | Seis partituras com estrutura e alterações binárias verificadas; abertura pendente |
+| 0045/000E | 0044/0003 | 0044/0002 | Quatro partituras com estrutura e alterações binárias verificadas; abertura pendente |
+
+O ano comercial exato das revisões recentes não é inferido. Famílias antigas do catálogo PRONOM são reconhecidas; destinos anteriores a 2024 não são oferecidos sem validação. Este ajuste de identificação não traduz todos os recursos novos. Confira abertura, conteúdo, salvamento e reabertura no Sibelius. O original permanece intacto.
+
+## Desenvolvimento e publicação
+
+Node.js 22.12 ou superior:
+
+~~~sh
 npm ci
 npm run dev
-```
-
-Abra o endereço mostrado pelo Vite. Selecione ou arraste um `.sib`, confira o formato, gere e baixe uma cópia. Limite de 50 MiB, um arquivo por vez. A assinatura binária valida o arquivo, não apenas a extensão.
-
-## Testar e compilar
-
-```sh
 npm test
-npm run build
-npm run preview
-```
+npm run build:cloud
+~~~
 
-A produção é gerada em `docs/`, com caminhos relativos, pronta para hospedagem estática. No GitHub Pages, use a branch `main` e a pasta `/docs`. Após alterar o código, execute `npm run build` e inclua os arquivos atualizados de `docs/` no commit. O build de React usa módulos e deve ser servido por HTTP(S); use o servidor local ou o site publicado.
+O Vite local e o GitHub Pages usam a API pública configurada em .openai/hosting.json, no campo cloud_origin. Para desenvolver a API, invoque api(Request) em Node ou execute o Worker compilado num runtime compatível com Fetch.
 
-## Suporte
+build:cloud compila o frontend para o Worker, incorpora seus arquivos estáticos e gera dist/server/index.js e dist/.openai/hosting.json. Depois gera o frontend do GitHub Pages em docs/, apontando para a API pública.
 
-- Reconhece famílias documentadas no PRONOM, desde 1.2 até 2024.
-- Reconhece `0045/0003` como formato recente; não determina o ano exato do programa criador.
-- Perfil padrão: `0045/0003 → 0044/0003`.
-- Perfil alternativo: `0045/0003 → 0044/0002`.
-- Abertura confirmada pelo usuário em duas partituras no Sibelius 2024.6.1. Outros destinos ainda não foram testados.
+Publique o commit exato na fonte Git do Sites, empacote o conteúdo de dist/ em tar, salve uma versão e publique-a. Depois envie main ao GitHub: o Pages usa /docs. Tokens de publicação não pertencem ao repositório.
 
-Este ajuste modifica a identificação do formato; não traduz todos os recursos novos para equivalentes antigos. Não garante preservação musical universal. Sempre teste abertura, salvamento e reabertura de uma cópia no Sibelius de destino. O original permanece intacto.
+## Estudo do acervo
 
-## Estrutura
+Foram examinadas 21 partituras e inventariados 16 arquivos auxiliares de duas pastas locais. Há quatro combinações: 0044/0002 (3), 0044/0003 (8), 0045/0009 (6) e 0045/000E (4). Todos os cabeçalhos encontrados nas 21 partituras são alcançáveis pelo índice. As dez recentes passaram pelos dois perfis e pela comparação binária.
 
-- `src/lib/sibelius.js`: reconhecimento, índices internos e patch verificado.
-- `src/converter.worker.js`: processamento fora da interface; guarda o original em memória.
-- `src/useConverter.js`: estado, troca de arquivos e ciclo de vida dos downloads.
-- `src/App.jsx`: seleção, informações, opções e download.
-- `tests/`: casos sintéticos; as partituras privadas não estão no repositório.
-- `docs/`: versão compilada para hospedagem.
+scripts/study-corpus.js reproduz o inventário, hashes, formatos, cabeçalhos e verificações sem modificar os originais. Execute passando as pastas; o relatório detalhado é escrito fora do repositório para preservar caminhos e nomes privados. MP3, WMV e PDF são referências auxiliares; seus conteúdos não são estruturas .sib.
 
-O leitor valida cabeçalhos, limites, tipos conhecidos, ciclos e sobreposições. Recusa estruturas desconhecidas e campos internos mistos. A saída passa por comparação byte a byte: só as posições previstas podem mudar. A interface informa “cópia gerada”, sem afirmar validação musical automática.
+## Arquivos principais
+
+- src/lib/sibelius.js: identificação e transformação verificada.
+- server/api.js: leitura limitada e API sem armazenamento.
+- server/index.js: Worker e arquivos estáticos.
+- src/useConverter.js: upload, cancelamento de requisições antigas e downloads.
+- tests/: testes sintéticos do motor, API e Worker legado.
 
 ## Fontes
 
-- [PRONOM: família 2024](https://pronom.nationalarchives.gov.uk/fmt/1993)
-- [PRONOM: 2020.1](https://pronom.nationalarchives.gov.uk/fmt/1988)
-- [Catálogo de assinaturas](https://pronom.nationalarchives.gov.uk/binary-signature.xml)
+- [PRONOM: Sibelius 2024](https://pronom.nationalarchives.gov.uk/fmt/1993)
+- [Assinaturas PRONOM](https://pronom.nationalarchives.gov.uk/binary-signature.xml)
+- [OpenAI Sites](https://github.com/openai/sites)
 
-Software independente, sem vínculo com Avid. Não modifica licença, ativação ou instalação do Sibelius.
+Ferramenta independente, sem vínculo com Avid. Não modifica licença, ativação ou instalação do Sibelius.

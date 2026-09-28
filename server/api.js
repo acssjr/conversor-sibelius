@@ -22,7 +22,7 @@ export async function api(request) {
   if (origin && !allowed) return json({error:'Origem não autorizada.'},403);
   let response;
   if (request.method === 'OPTIONS') response = new Response(null,{status:204});
-  else if (url.pathname === '/api/health' && request.method === 'GET') response = json({ok:true,processing:'cloud',version:'0.3.0',maxBytes:CLOUD_LIMIT,storage:'none'});
+  else if (url.pathname === '/api/health' && request.method === 'GET') response = json({ok:true,processing:'cloud',version:'0.4.0',maxBytes:CLOUD_LIMIT,storage:'none'});
   else if (!['/api/analyze','/api/convert'].includes(url.pathname)) response = json({error:'Rota não encontrada.'},404);
   else if (request.method !== 'POST') response = json({error:'Use POST para enviar a partitura.'},405);
   else {
@@ -31,13 +31,18 @@ export async function api(request) {
       const bytes = await readBytes(request);
       if (url.pathname === '/api/analyze') {
         const info = analyze(bytes); const {structure,...summary} = info;
+        if (info.convertible && info.provisional) {
+          // Trial a real conversion in memory before offering an uncatalogued format.
+          convert(bytes,'minimal');
+          summary.trialVerified = true;
+        }
         response = json({...summary,headers:structure?.nodes.length || 0});
       } else {
         const profile = url.searchParams.get('profile') || 'minimal';
         const result = convert(bytes,profile);
         const form = new FormData();
         form.append('score',new Blob([result.bytes],{type:'application/octet-stream'}),'converted.sib');
-        form.append('report',new Blob([JSON.stringify({...result.report,toolVersion:'0.3.0',processing:'cloud'})],{type:'application/json'}),'report.json');
+        form.append('report',new Blob([JSON.stringify({...result.report,toolVersion:'0.4.0',processing:'cloud'})],{type:'application/json'}),'report.json');
         response = new Response(form,{headers:{'Cache-Control':'no-store'}});
       }
     } catch (error) {
@@ -53,3 +58,4 @@ export async function api(request) {
   response.headers.set('X-Content-Type-Options','nosniff');
   return response;
 }
+

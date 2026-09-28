@@ -37,3 +37,9 @@ test('cloud exposes health and does not accept accidental GET conversions',async
   assert.equal((await response.json()).storage,'none');
   assert.equal((await api(new Request('https://example.test/api/convert'))).status,405);
 });
+test('uncatalogued revision is trial-converted before the upload is offered',async()=>{
+  const bytes=score(); bytes[13]=1; bytes[73]=1;
+  const response=await api(request('analyze',bytes)),info=await response.json();
+  assert.equal(response.status,200); assert.equal(info.provisional,true);
+  assert.equal(info.trialVerified,true); assert.equal(info.headers,2);
+});

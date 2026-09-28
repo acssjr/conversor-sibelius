@@ -25,7 +25,15 @@ for (const revision of [9,14]) test('observed corpus revision '+revision+' maps 
     assert.deepEqual(b,original);
   }
 });
-test('unobserved recent revision remains unsupported',()=>{
+test('uncatalogued recent revision is provisional after structural validation',()=>{
   const b=sample(); header(b,0,69,15,48,2); header(b,42,69,15);
-  assert.equal(core.analyze(b).convertible,false);
+  const info=core.analyze(b),result=core.convert(b);
+  assert.equal(info.convertible,true); assert.equal(info.provisional,true);
+  assert.equal(result.report.changedBytes,4); assert.equal(result.report.provisional,true);
+});
+test('uncatalogued major with familiar structure can be trialled, but malformed structure cannot',()=>{
+  const b=sample(); header(b,0,70,1,48,2); header(b,42,70,1);
+  assert.equal(core.analyze(b).provisional,true);
+  const result=core.convert(b); assert.equal(result.bytes[11],68); assert.equal(result.bytes[13],3);
+  header(b,42,70,2); assert.equal(core.analyze(b).convertible,false);
 });

@@ -22,7 +22,7 @@ O serviço valida o limite durante a leitura, assinatura, cabeçalhos, índices,
 | 0045/0009 | 0044/0003 | 0044/0002 | Seis partituras verificadas binariamente; abertura confirmada pelo usuário nos exemplos testados |
 | 0045/000E | 0044/0003 | 0044/0002 | Quatro partituras verificadas binariamente; abertura confirmada pelo usuário nos exemplos testados |
 
-O ano comercial exato das revisões recentes não é inferido. Famílias antigas do catálogo PRONOM são reconhecidas; destinos anteriores a 2024 não são oferecidos sem validação. Este ajuste de identificação não traduz todos os recursos novos. Confira abertura, conteúdo, salvamento e reabertura no Sibelius. O original permanece intacto.
+Revisões recentes não catalogadas, como 0045/0001, passam por validação do índice e por uma conversão padrão em memória já no upload. Se a comparação byte a byte passar, o site oferece ambos os perfis e sinaliza que a abertura ainda depende de teste no Sibelius. Revisões estruturais desconhecidas são recusadas. O ano comercial exato das revisões recentes não é inferido. Famílias antigas do catálogo PRONOM são reconhecidas; destinos anteriores a 2024 não são oferecidos sem validação. Este ajuste de identificação não traduz todos os recursos novos. Confira abertura, conteúdo, salvamento e reabertura no Sibelius. O original permanece intacto.
 
 ## Desenvolvimento e publicação
 
@@ -62,6 +62,7 @@ scripts/study-corpus.js reproduz o inventário, hashes, formatos, cabeçalhos e 
 - [OpenAI Sites](https://github.com/openai/sites)
 
 Ferramenta independente, sem vínculo com Avid. Não modifica licença, ativação ou instalação do Sibelius.
+
 
 
 

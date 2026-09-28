@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile, mkdir, copyFile, unlink } from 'node:fs/promises';
+import { readdir, readFile, writeFile, mkdir, copyFile, unlink, cp } from 'node:fs/promises';
 import { build } from 'vite';
 const assets = {};
 async function cleanGeneratedAssets() {
@@ -22,6 +22,7 @@ await writeFile('server/generated-assets.js','export default '+JSON.stringify(as
 await build({configFile:false,build:{ssr:'server/index.js',outDir:'dist/server',emptyOutDir:true,rollupOptions:{output:{entryFileNames:'index.js'}}}});
 await mkdir('dist/.openai',{recursive:true});
 await copyFile('.openai/hosting.json','dist/.openai/hosting.json');
+await cp('drizzle','dist/.openai/drizzle',{recursive:true});
 console.log('Cloud worker and frontend packaged in dist.');
 // The GitHub Pages frontend calls the same public service at its cloud origin.
 await cleanGeneratedAssets();

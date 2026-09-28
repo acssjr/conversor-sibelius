@@ -29,7 +29,7 @@ export function useConverter() {
     if (!state.info?.convertible || state.phase==='converting') return;
     const id = ticket.current, file = currentFile.current;
     controller.current?.abort(); controller.current=new AbortController(); revoke();
-    setState(previous=>({...previous,phase:'converting',result:null,error:null}));
+    setState(previous=>({...previous,phase:'converting',result:null,feedback:null,error:null}));
     try {
       const form = await (await send('/api/convert?profile='+encodeURIComponent(profile),file,controller.current.signal)).formData();
       if (id!==ticket.current) return;
@@ -43,7 +43,19 @@ export function useConverter() {
       setState(previous=>({...previous,phase:'done',error:null,result:{name,fileUrl,reportUrl,reportName:stem+' - relatorio.json',report}}));
     } catch(error) { if (id===ticket.current && error.name!=='AbortError') setState(previous=>({...previous,phase:'error',result:null,error:error.message})); }
   }
-  function clearResult() { revoke(); setState(previous=>({...previous,phase:previous.info?'ready':previous.phase,result:null,error:null})); }
+  async function submitFeedback(worked) {
+    if (state.phase!=='done' || !state.result || !currentFile.current || state.feedback?.saving) return;
+    const id=ticket.current, profile=state.result.report.profile;
+    setState(previous=>({...previous,feedback:{saving:true}}));
+    try {
+      const response=await send('/api/feedback?profile='+encodeURIComponent(profile)+'&worked='+(worked?'yes':'no'),currentFile.current,controller.current?.signal);
+      const recorded=await response.json();
+      if (id===ticket.current) setState(previous=>({...previous,feedback:{saving:false,worked},info:{...previous.info,catalog:recorded.catalog,catalogued:!!(recorded.catalog?.minimal.yes||recorded.catalog?.alternative.yes)}}));
+    } catch(error) {
+      if (id===ticket.current && error.name!=='AbortError') setState(previous=>({...previous,feedback:{saving:false,error:error.message}}));
+    }
+  }
+  function clearResult() { revoke(); setState(previous=>({...previous,phase:previous.info?'ready':previous.phase,result:null,feedback:null,error:null})); }
   function showError(error) { ticket.current++; controller.current?.abort(); revoke(); currentFile.current=null; setState({phase:'error',error}); }
-  return {state,selectFile,generate,clearResult,showError};
+  return {state,selectFile,generate,submitFeedback,clearResult,showError};
 }

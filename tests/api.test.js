@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { api,CLOUD_LIMIT } from '../server/api.js';
 import { convert } from '../src/lib/sibelius.js';
+import { DatabaseSync } from 'node:sqlite';
 function score() {
   const bytes=new Uint8Array(100),v=new DataView(bytes.buffer);
   for (const p of [0,60]) { bytes.set([15,83,73,66,69,76,73,85,83,0,0,69,0,3],p); v.setUint32(p+18,p===0?48:58); }
@@ -34,7 +35,7 @@ test('cloud permits Pages CORS and rejects other browser origins',async()=>{
 });
 test('cloud exposes health and does not accept accidental GET conversions',async()=>{
   const response=await api(new Request('https://example.test/api/health'));
-  assert.equal((await response.json()).storage,'none');
+  assert.equal((await response.json()).storage,'unavailable');
   assert.equal((await api(new Request('https://example.test/api/convert'))).status,405);
 });
 test('uncatalogued revision is trial-converted before the upload is offered',async()=>{
@@ -42,4 +43,21 @@ test('uncatalogued revision is trial-converted before the upload is offered',asy
   const response=await api(request('analyze',bytes)),info=await response.json();
   assert.equal(response.status,200); assert.equal(info.provisional,true);
   assert.equal(info.trialVerified,true); assert.equal(info.headers,2);
+});
+test('feedback catalogs per revision and profile, deduplicates a score, and can be corrected',async()=>{
+  const sqlite=new DatabaseSync(':memory:');
+  sqlite.exec('CREATE TABLE format_feedback (score_hash TEXT NOT NULL, profile TEXT NOT NULL, major INTEGER NOT NULL, revision INTEGER NOT NULL, worked INTEGER NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(score_hash,profile))');
+  const DB={prepare(sql){const stmt=sqlite.prepare(sql);return {bind(...values){return {all:async()=>({results:stmt.all(...values)}),run:async()=>stmt.run(...values)};}};}};
+  const bytes=score(); bytes[13]=1; bytes[73]=1;
+  const submit=worked=>api(request('feedback?profile=minimal&worked='+worked,bytes),{DB});
+  const first=await submit('yes'); assert.equal(first.status,200);
+  assert.equal((await first.json()).catalog.minimal.yes,1);
+  assert.equal((await (await submit('yes')).json()).catalog.minimal.yes,1);
+  const analysis=await api(request('analyze',bytes),{DB}),info=await analysis.json();
+  assert.equal(info.catalogued,true); assert.equal(info.catalog.minimal.yes,1);
+  const changed=await submit('no'),result=await changed.json();
+  assert.equal(result.catalog.minimal.yes,0); assert.equal(result.catalog.minimal.no,1);
+  assert.equal((await api(request('feedback?profile=alternative&worked=maybe',bytes),{DB})).status,422);
+  assert.equal((await api(request('feedback?profile=minimal&worked=yes',bytes))).status,503);
+  sqlite.close();
 });

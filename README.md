@@ -1,16 +1,16 @@
 # Conversor Sibelius
 
-React + Vite com processamento em nuvem em um Worker HTTP. O navegador envia o arquivo por HTTPS, recebe a análise e pode pedir uma cópia para Sibelius 2024. O aplicativo não grava partituras em banco de dados, disco ou armazenamento de objetos.
+React + Vite com processamento em nuvem em um Worker HTTP. O navegador envia o arquivo por HTTPS, recebe a análise e pode pedir uma cópia para Sibelius 2024. O aplicativo não grava partituras em banco de dados, disco ou armazenamento de objetos. Respostas de funcionamento são guardadas em um banco D1.
 
 [Usar o conversor](https://acssjr.github.io/conversor-sibelius/)
 
 ## Funcionamento
 
-Um arquivo por vez, até 20 MiB. A análise e a conversão são requisições independentes: cada uma envia o original, processa em memória e devolve o resultado. Não há histórico nem URL persistente para partituras.
+Um arquivo por vez, até 20 MiB. A análise e a conversão são requisições independentes: cada uma envia o original, processa em memória e devolve o resultado. Não há histórico nem URL persistente para partituras. Após testar uma cópia, a pessoa pode responder Sim ou Não; o catálogo guarda apenas código de formato, perfil, resposta e hash SHA-256 do arquivo. Respostas repetidas para o mesmo arquivo e perfil atualizam o registro, sem duplicar a contagem. Um sucesso relatado marca a revisão como catalogada por usuário; não é uma certificação oficial.
 
 - POST /api/analyze: bytes application/octet-stream; resumo JSON.
 - POST /api/convert?profile=minimal|alternative: mesmos bytes; resposta multipart contendo arquivo e relatório técnico completo.
-- GET /api/health: estado, versão e limite de upload.
+- POST /api/feedback?profile=minimal|alternative&worked=yes|no: bytes originais; registra ou atualiza o teste e devolve as contagens.`n- GET /api/health: estado, versão e limite de upload.
 
 O serviço valida o limite durante a leitura, assinatura, cabeçalhos, índices, ciclos, sobreposições e consistência de versões internas. Só modifica posições previstas e compara a saída byte a byte. CORS permite o frontend do GitHub Pages e o próprio serviço. Não registra nomes ou conteúdo das partituras. A hospedagem pode manter registros operacionais de requisições.
 
@@ -62,6 +62,7 @@ scripts/study-corpus.js reproduz o inventário, hashes, formatos, cabeçalhos e 
 - [OpenAI Sites](https://github.com/openai/sites)
 
 Ferramenta independente, sem vínculo com Avid. Não modifica licença, ativação ou instalação do Sibelius.
+
 
 
 
